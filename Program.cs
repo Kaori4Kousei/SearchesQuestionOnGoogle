@@ -19,7 +19,6 @@ namespace GoogleSearchConsole
 {
     class Program
     {
-        
         private static void Main(string[] args)
         {
             while(true)
@@ -27,100 +26,80 @@ namespace GoogleSearchConsole
                 Console.ReadKey();
                 var watch = System.Diagnostics.Stopwatch.StartNew();
 
-                //takes the screenshot of question
-                var smallX = Math.Min(502, 873);
-                var largeX = Math.Max(502, 873);
-                var smallY = Math.Min(197, 329);
-                var largeY = Math.Max(197, 329);
+                //As soon as we create the class, constructor clicks the image of the question
+                QuestionImage questionImage = new QuestionImage();
 
-                using (var bitmap = new Bitmap((int)(largeX - smallX), (int)(largeY - smallY)))
-                {
-                    using (var graphics = Graphics.FromImage(bitmap))
-                    {
-                        graphics.Clear(System.Drawing.Color.HotPink);
-                        graphics.CopyFromScreen((int)smallX, (int)smallY, 0, 0, new Size((int)(largeX - smallX), (int)(largeY - smallY)));
-                    }
-
-                    bitmap.Save(@"E:\foo\screencap1.png");
-                }
                 //gets result of the OCR
                 OcrResult questionImgResult = MyFunction(@"E:\foo\screencap1.png").GetAwaiter().GetResult();
                 Console.WriteLine(questionImgResult.Text);
 
+                //For Answer
+                AnswerImage answerImage = new AnswerImage();
 
-                //bools that helps to parse the questions and answers from OcrResult
-                bool questionMarkFound = false;
-                bool answerOnefound = false;
-                bool answerTwoFound = false;
-                bool answerThreeFound = false;
-                bool answerFourFound = false;
+                //gets result of the answer OCR
+                OcrResult answerImgResult = MyFunction(@"E:\foo\screencap2.png").GetAwaiter().GetResult();
+                Console.WriteLine(answerImgResult.Text);
 
                 //string builders to add the words
                 var questionMaker = new System.Text.StringBuilder();
+
+                foreach (var line in questionImgResult.Lines) //For each line this will execute
+                {
+                    foreach (OcrWord word in line.Words) //now every word in that line
+                    {
+                        questionMaker.AppendFormat("{0} ", word.Text);
+                    }
+                }
+                string query = questionMaker.ToString(); //this is our query
+
                 var answerOneMaker = new System.Text.StringBuilder();
                 var answerTwoMaker = new System.Text.StringBuilder();
                 var answerThreeMaker = new System.Text.StringBuilder();
                 var answerFourMaker = new System.Text.StringBuilder();
 
+                //bools that helps to parse the questions and answers from OcrResult
+                bool answerOnefound = false;
+                bool answerTwoFound = false;
+                bool answerThreeFound = false;
+                bool answerFourFound = false;
 
-                foreach (var line in questionImgResult.Lines) //For each line this will execute
+                //number of words in an answer
+                int answerOneWords = 0;
+                int answerTwoWords = 0;
+                int answerThreeWords = 0;
+                int answerFourWords = 0;
+
+                foreach (var line in answerImgResult.Lines)
                 {
-                    if (questionMarkFound != true) //question mark is false from starting so this will run
+                    if (answerOnefound != true) // if first question is not found
                     {
-                        foreach (OcrWord word in line.Words) //now every word in that line
-                        {
-                            if ((!word.Text.Contains('?')) && questionMarkFound != true) //if question mark is not found it will keep appending the words in the query string
-                            {
-                                questionMaker.AppendFormat("{0} ", word.Text); //adds a space after every word
-                            }
-                            if (word.Text.Contains('?') && questionMarkFound != true)
-                            {
-                                questionMaker.AppendFormat("{0}", word.Text); //the last word of the question with '?'
-                                questionMarkFound = true;
-                            }
-                            //if (questionMarkFound == true) What this does is that it ends the string on the question mark
-                            //    break;
-                        }
+                        foreach (OcrWord word in line.Words) //adds every word to the first answerMaker
+                            answerOneMaker.AppendFormat("{0} ", word.Text);
+                        answerOnefound = true; //makes first question found true
                     }
-                    else //this will only run when the question mark is found
-                    {
-                        if (questionMarkFound == true && answerOnefound != true) // if the question mark is found and the question one is not found
-                        {
-                            foreach (OcrWord word in line.Words) //adds every word to the first answerMaker
-                                answerOneMaker.AppendFormat("{0} ", word.Text);
-                            answerOnefound = true; //makes first question found true
-                        }
 
-                        else if (questionMarkFound == true && answerOnefound == true && answerTwoFound != true) //will only run when question marks is found, answer one is found and answer two isn't found yet
-                        {
-                            foreach (OcrWord word in line.Words)
-                                answerTwoMaker.AppendFormat("{0} ", word.Text);
-                            answerTwoFound = true; // question two is found
-                        }
-                        else if (questionMarkFound == true && answerTwoFound == true && answerThreeFound != true) //will only run when question marks is found, answer one is found and answer two isn't found yet
-                        {
-                            foreach (OcrWord word in line.Words)
-                                answerThreeMaker.AppendFormat("{0} ", word.Text);
-                            answerThreeFound = true;
-                        }
-                        else if (questionMarkFound == true && answerThreeFound == true && answerFourFound != true)
-                        {
-                            foreach (OcrWord word in line.Words)
-                                answerFourMaker.AppendFormat("{0} ", word.Text);
-                            answerFourFound = true;
-                        }
+                    else if (answerOnefound == true && answerTwoFound != true) //will only run when question marks is found, answer one is found and answer two isn't found yet
+                    {
+                        foreach (OcrWord word in line.Words)
+                            answerTwoMaker.AppendFormat("{0} ", word.Text);
+                        answerTwoFound = true; // question two is found
+                    }
+                    else if (answerTwoFound == true && answerThreeFound != true) //will only run when question marks is found, answer one is found and answer two isn't found yet
+                    {
+                        foreach (OcrWord word in line.Words)
+                            answerThreeMaker.AppendFormat("{0} ", word.Text);
+                        answerThreeFound = true;
+                    }
+                    else if (answerThreeFound == true && answerFourFound != true)
+                    {
+                        foreach (OcrWord word in line.Words)
+                            answerFourMaker.AppendFormat("{0} ", word.Text);
+                        answerFourFound = true;
                     }
                 }
-                string query = questionMaker.ToString(); //this is our query
-
-                Console.WriteLine(query);
-
                 string answer1 = answerOneMaker.ToString().Trim().ToLower(); //removes any spaces before and after, lowers as well
-
                 string answer2 = answerTwoMaker.ToString().Trim().ToLower();
-
                 string answer3 = answerThreeMaker.ToString().Trim().ToLower();
-
                 string answer4 = answerFourMaker.ToString().Trim().ToLower();
 
                 Console.WriteLine(answer1);
@@ -155,14 +134,38 @@ namespace GoogleSearchConsole
                             {
                                 string foundWords = text.Trim().ToLower();
                                 foundWords = foundWords.Replace(",", "").Replace("_", "");
-                                if (answer1.Contains(foundWords))
-                                    countAnswer1++;
-                                if (answer2.Contains(foundWords))
-                                    countAnswer2++;
-                                if (answer3.Contains(foundWords))
-                                    countAnswer3++;
-                                if (answer4.Contains(foundWords))
-                                    countAnswer4++;
+
+                                foreach (string possibleAnswer in answer1.Split(' '))
+                                {
+                                    if (possibleAnswer.Equals(foundWords))
+                                        countAnswer1++;
+                                }
+
+                                foreach (var possibleAnswer in answer2.Split(' '))
+                                {
+                                    if (possibleAnswer.Equals(foundWords))
+                                        countAnswer2++;
+                                }
+
+                                foreach (var possibleAnswer in answer3.Split(' '))
+                                {
+                                    if (possibleAnswer.Equals(foundWords))
+                                        countAnswer3++;
+                                }
+
+                                foreach (var possibleAnswer in answer4.Split(' '))
+                                {
+                                    if (possibleAnswer.Equals(foundWords))
+                                        countAnswer4++;
+                                }
+                                //if (answer1.Contains(foundWords))
+                                //    countAnswer1++;
+                                //if (answer2.Contains(foundWords))
+                                //    countAnswer2++;
+                                //if (answer3.Contains(foundWords))
+                                //    countAnswer3++;
+                                //if (answer4.Contains(foundWords))
+                                //    countAnswer4++;
                             }
                         }
                     count++;
@@ -186,7 +189,7 @@ namespace GoogleSearchConsole
                 Console.WriteLine(" \t Answer is : {0}", answer);
 
                 //opens browser
-                Process.Start("https://www.google.com/search?q=" + Uri.EscapeDataString(query));
+                //Process.Start("https://www.google.com/search?q=" + Uri.EscapeDataString(query));
 
                 watch.Stop();
                 var elapsedMs = watch.ElapsedMilliseconds;
@@ -194,7 +197,8 @@ namespace GoogleSearchConsole
             }
         }
 
-            public static async Task<OcrResult> MyFunction(string fileURL)
+        //OCR Function
+        public static async Task<OcrResult> MyFunction(string fileURL)
         {
             var ocrEngine = OcrEngine.TryCreateFromLanguage(new Windows.Globalization.Language("en-us"));
             if (ocrEngine == null)
@@ -202,11 +206,11 @@ namespace GoogleSearchConsole
                 throw new InvalidOperationException("engine was null");
             }
             FileStream imageStream = File.Open(fileURL, FileMode.Open);
-                var decoder = await BitmapDecoder.CreateAsync(imageStream.AsRandomAccessStream());
-                var softwareBitmap = await decoder.GetSoftwareBitmapAsync();
-                var ocrResult = await ocrEngine.RecognizeAsync(softwareBitmap);
+            var decoder = await BitmapDecoder.CreateAsync(imageStream.AsRandomAccessStream());
+            var softwareBitmap = await decoder.GetSoftwareBitmapAsync();
+            var ocrResult = await ocrEngine.RecognizeAsync(softwareBitmap);
             imageStream.Dispose();
-                return ocrResult;
+            return ocrResult;
         }
     }
 }
