@@ -28,10 +28,10 @@ namespace GoogleSearchConsole
                 var watch = System.Diagnostics.Stopwatch.StartNew();
 
                 //takes the screenshot of question
-                var smallX = Math.Min(510, 872);
-                var largeX = Math.Max(510, 872);
-                var smallY = Math.Min(268, 557);
-                var largeY = Math.Max(268, 557);
+                var smallX = Math.Min(502, 873);
+                var largeX = Math.Max(502, 873);
+                var smallY = Math.Min(197, 329);
+                var largeY = Math.Max(197, 329);
 
                 using (var bitmap = new Bitmap((int)(largeX - smallX), (int)(largeY - smallY)))
                 {
@@ -43,13 +43,11 @@ namespace GoogleSearchConsole
 
                     bitmap.Save(@"E:\foo\screencap1.png");
                 }
-
-
-
                 //gets result of the OCR
-                OcrResult x = MyFunction().GetAwaiter().GetResult();
+                OcrResult questionImgResult = MyFunction(@"E:\foo\screencap1.png").GetAwaiter().GetResult();
+                Console.WriteLine(questionImgResult.Text);
 
-                Console.WriteLine(x.Text);
+
                 //bools that helps to parse the questions and answers from OcrResult
                 bool questionMarkFound = false;
                 bool answerOnefound = false;
@@ -65,7 +63,7 @@ namespace GoogleSearchConsole
                 var answerFourMaker = new System.Text.StringBuilder();
 
 
-                foreach (var line in x.Lines) //For each line this will execute
+                foreach (var line in questionImgResult.Lines) //For each line this will execute
                 {
                     if (questionMarkFound != true) //question mark is false from starting so this will run
                     {
@@ -196,14 +194,14 @@ namespace GoogleSearchConsole
             }
         }
 
-            public static async Task<OcrResult> MyFunction()
+            public static async Task<OcrResult> MyFunction(string fileURL)
         {
             var ocrEngine = OcrEngine.TryCreateFromLanguage(new Windows.Globalization.Language("en-us"));
             if (ocrEngine == null)
             {
                 throw new InvalidOperationException("engine was null");
             }
-            FileStream imageStream = File.Open(@"E:\foo\screencap.png", FileMode.Open);
+            FileStream imageStream = File.Open(fileURL, FileMode.Open);
                 var decoder = await BitmapDecoder.CreateAsync(imageStream.AsRandomAccessStream());
                 var softwareBitmap = await decoder.GetSoftwareBitmapAsync();
                 var ocrResult = await ocrEngine.RecognizeAsync(softwareBitmap);
